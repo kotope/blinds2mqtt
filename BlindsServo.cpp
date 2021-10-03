@@ -1,7 +1,7 @@
 #include "BlindsServo.h"
 
-BlindsServo::BlindsServo(int id, int servoPin, int minValue, int maxValue, int maxDegree, boolean debug) {
-  init(id, servoPin, minValue, maxValue, maxDegree, debug);
+BlindsServo::BlindsServo(int id, int servoPin, int minValue, int maxValue, int maxDegree, boolean reversed, boolean debug) {
+  init(id, servoPin, minValue, maxValue, maxDegree, reversed, debug);
 }
 
 BlindsServo::BlindsServo() {
@@ -12,14 +12,14 @@ BlindsServo::~BlindsServo() {
   servo.detach();
 }
 
-void BlindsServo::init(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean debug) {
+void BlindsServo::init(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean reversed, boolean debug) {
   this->id = id;
   this->servoPin = servoPin;
   this->servoMinPulse = minPulseValue;
   this->servoMaxPulse = maxPulseValue;
   this->servoMaxDegree = maxDegree;
   this->isDebug = debug;
-
+  this->isReversed = reversed;
   attached = false;
 }
 
@@ -39,12 +39,8 @@ void BlindsServo::goToAngle(int angle) {
   if (isMoving()) {
     setStop(); // Stop
   }
-
   
   target = angle;
-
-  Serial.print("go to target ");
-  Serial.println(String(target));
 }
 
 
@@ -72,7 +68,7 @@ void BlindsServo::loop() {
 
   // Before move, we take the prev position
   previousPosition = currentPosition;
- 
+
   if(currentPosition < target){
     servo.writeMicroseconds(angleToServo(currentPosition++));
     statusChangedCallback(id);
@@ -158,10 +154,14 @@ int BlindsServo::angleToServo(int angle){
 
   int res = (int)round(result);
 
+  if(isReversed) { // Servo reversing support
+    res = (servoMaxPulse + servoMinPulse) - res;
+  }
+
   // Ensure result is valid
   if (res < servoMinPulse || res > servoMaxPulse) {
     return servoMinPulse;
   }
-  
+
   return res;
 }
