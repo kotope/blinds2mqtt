@@ -13,7 +13,7 @@
 #include "blinds2mqtt.h"
 #include "BlindsServo.h"
 
-#define SW_VERSION "0.1"
+#define SW_VERSION "0.2"
 
 #define JSON_BUFFER_LENGTH 2048
 #define MQTT_TOPIC_MAX_LENGTH 256
@@ -51,12 +51,25 @@ void setup() {
   initOTA();
 
   numberOfServos = sizeof(servoPins) / sizeof(servoPins[0]);
+  int numberOfReversedServos = sizeof(reversedPins) / sizeof(servoPins[0]); // We might not have any servos as reversed, thus using servoPin size
 
   Serial.print("numberOfServos = ");
   Serial.println(numberOfServos);
 
   for (int i = 0; i < numberOfServos; i++) {
-    servos[i] = BlindsServo(i+1, servoPins[i], servo_min_pulse, servo_max_pulse, servo_max_angle, debug);
+    unsigned int servoPin = servoPins[i];
+    boolean reversed = false;
+
+    // Check if servo is in reversed array
+    for (int r = 0; r < numberOfReversedServos; r++) {
+      unsigned int reversedPin = reversedPins[r];
+      if(servoPin == reversedPin) {
+        reversed = true;
+        break;
+      }
+    }
+
+    servos[i] = BlindsServo(i+1, servoPin, servo_min_pulse, servo_max_pulse, servo_max_angle, reversed, debug);
     servos[i].setDebugPrintCallback(debugPrint);
     servos[i].setStatusChangedCallback(statusChanged);
   }
@@ -160,7 +173,7 @@ void subscribeAndPublishConfig(int servoId) {
 
   if (client.subscribe(topic)) {
     // OK
-    debugPrint("Subscribed to blinds set topic (" + String(servoId) + ")");
+    debugPrint("Subscribed to blinds set topic (" + String(servoId) + "), uniqueId = " + uniqueId);
     publishConfig(servoId); // Publish config right after subscribed to command topic
   } else {
     // FAIL
@@ -188,8 +201,6 @@ void mqttCallback(char* topic, byte * payload, unsigned int length) {
        if(getValue(topic, '/', 3) == "set") { // Ensure set topic
            handleSet(payload, length, servoId);
        }
-
-       // TODO: Support for position topic
      }
   }
 }

@@ -3,7 +3,11 @@ const char* ssid     = "****"; // Your WiFi SSID
 const char* password = "****"; // Your WiFi password
 
 // Servo pins to use (each servo to be placed on it's own IO pin)
+// To set servos turn as reversed, set reversed pins array to wich servos should turn opposite direction. example: { D7, D6 }
+// Reversed servos should be subset of servoPins e.g. reversedPin must be also in servoPins array!
 const unsigned int servoPins[] = { D7, D6, D5 };
+const unsigned int reversedPins[] = { }; // Array of reversed servo pins. Must be subset of servoPins.
+
 
 // mqtt server settings
 const char* mqtt_server   = "192.168.1.*"; // Your MQTT server address

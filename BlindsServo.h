@@ -12,7 +12,7 @@ class BlindsServo {
   public:
     enum blindsStatus { OPEN, CLOSED, OPENING, CLOSING };
 
-    BlindsServo(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean debug = false);
+    BlindsServo(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean reversed = false, boolean debug = false);
     BlindsServo();
     ~BlindsServo();
 
@@ -44,7 +44,7 @@ class BlindsServo {
     void setClose();
 
   private:
-    void init(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean debug);
+    void init(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean reversed, boolean debug);
     void attach();
     void goToAngle(int angle); // Goes to specific angle
     int angleToServo(int angle);
@@ -60,12 +60,13 @@ class BlindsServo {
     int target = 0;
     int currentPosition = -1; // -1 = unknown value (initial state)
     int previousPosition = -1;
-
+    
     // Servo configuration
     int servoMinPulse;
     int servoMaxPulse;
     int servoPin;
     int servoMaxDegree;
+    boolean isReversed = false;
 
     // Debugging options
     boolean isDebug = false;
