@@ -28,6 +28,11 @@ void BlindsServo::attach() {
   attached = true;
 }
 
+void BlindsServo::detach() {
+  servo.detach();
+  attached = false;
+}
+
 void BlindsServo::goToAngle(int angle) {
   debugPrint("Go to angle: " + String(angle));
   
@@ -80,6 +85,7 @@ void BlindsServo::loop() {
 
   // Notify that we have reached the target
   if (currentPosition == target && previousPosition != currentPosition) {
+    detach();
     statusChangedCallback(id);
   }
 }
