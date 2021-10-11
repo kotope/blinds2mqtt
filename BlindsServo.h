@@ -46,6 +46,7 @@ class BlindsServo {
   private:
     void init(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean reversed, boolean debug);
     void attach();
+    void detach();
     void goToAngle(int angle); // Goes to specific angle
     int angleToServo(int angle);
     void debugPrint(String text);

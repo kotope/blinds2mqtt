@@ -13,7 +13,7 @@
 #include "blinds2mqtt.h"
 #include "BlindsServo.h"
 
-#define SW_VERSION "0.2"
+#define SW_VERSION "0.2.1"
 
 #define JSON_BUFFER_LENGTH 2048
 #define MQTT_TOPIC_MAX_LENGTH 256
