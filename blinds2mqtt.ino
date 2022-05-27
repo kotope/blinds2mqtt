@@ -13,7 +13,7 @@
 #include "blinds2mqtt.h"
 #include "BlindsServo.h"
 
-#define SW_VERSION "0.2.1"
+#define SW_VERSION "0.3.0"
 
 #define JSON_BUFFER_LENGTH 2048
 #define MQTT_TOPIC_MAX_LENGTH 256
@@ -37,6 +37,8 @@ int numberOfServos = 0;
 int pos = 0;
 
 String uniqueId;
+
+unsigned long loopStart;
 
 void setup() {
   // Setup serial port
@@ -127,12 +129,17 @@ void loop()
     mqttConnect();
   }
 
-  for (int i = 0; i < numberOfServos; i++) {
-    servos[i].loop();
-  }
+  unsigned long now = millis();
 
-  // Wait for servos to turn
-  delay(15);
+  if(now - loopStart >= turnTime) {
+    // Over one sec from start loop passed
+    loopStart = now;
+
+    // Main servo loop
+    for (int i = 0; i < numberOfServos; i++) {
+      servos[i].loop();
+    }
+  }
 
   // Rest of the loop
   MDNS.update();
@@ -297,5 +304,5 @@ void statusChanged(int servoId) {
   
   char t[MQTT_TOPIC_MAX_LENGTH];
   sprintf(t, blinds_state_topic, uniqueId.c_str(), servoId);
-  client.publish(t, statusMsg.c_str());
+  client.publish(t, statusMsg.c_str(), retain_status);
 }
