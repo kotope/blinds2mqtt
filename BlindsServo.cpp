@@ -37,7 +37,7 @@ void BlindsServo::goToAngle(int angle) {
   debugPrint("Go to angle: " + String(angle));
   
   // Ensure limits
-  if(angle > 270 || angle < 0) {
+  if(angle > servoMaxDegree || angle < 0) {
     return;
   }
   
@@ -65,6 +65,14 @@ void BlindsServo::setClose() {
   goToAngle(0);
 }
 
+void BlindsServo::goToPosition(int position) {
+  if(position >= 0 && position <= 100) {
+    float angle = (float) ((float) position / (float) 100) * (float) 270;
+    int res = (int)round(angle);
+    goToAngle(res);
+  }
+}
+
 void BlindsServo::loop() {
   // Do the main loop
   if (currentPosition != target && attached == false) {
@@ -73,21 +81,31 @@ void BlindsServo::loop() {
 
   // Before move, we take the prev position
   previousPosition = currentPosition;
+  blindsStatus currentStatus = getStatus();
 
   if(currentPosition < target){
     servo.writeMicroseconds(angleToServo(currentPosition++));
-    statusChangedCallback(id);
+    if (previousStatus != currentStatus) {
+      statusChangedCallback(id);
+    }
+    positionChangedCallback(id);
   }
   else if(currentPosition > target){
     servo.writeMicroseconds(angleToServo(currentPosition--));
-    statusChangedCallback(id);
+    if (previousStatus != currentStatus) {
+      statusChangedCallback(id);
+    }
+    positionChangedCallback(id);
   }
 
   // Notify that we have reached the target
   if (currentPosition == target && previousPosition != currentPosition) {
     detach();
     statusChangedCallback(id);
+    positionChangedCallback(id);
   }
+
+  previousStatus = currentStatus;
 }
 
 boolean BlindsServo::isOpening() {
@@ -149,6 +167,10 @@ void BlindsServo::setDebugPrintCallback(DEBUG_PRINT_CALLBACK_SIGNATURE) {
 
 void BlindsServo::setStatusChangedCallback(STATUS_CHANGED_CALLBACK_SIGNATURE) {
   this->statusChangedCallback = statusChangedCallback;
+}
+
+void BlindsServo::setPositionChangedCallback(POSITION_CHANGED_CALLBACK_SIGNATURE) {
+  this->positionChangedCallback = positionChangedCallback;
 }
 
 // Privates

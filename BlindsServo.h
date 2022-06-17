@@ -6,6 +6,7 @@
 
 #define DEBUG_PRINT_CALLBACK_SIGNATURE std::function<void(String debugPrint)> debugPrintCallback
 #define STATUS_CHANGED_CALLBACK_SIGNATURE std::function<void(int servoId)> statusChangedCallback
+#define POSITION_CHANGED_CALLBACK_SIGNATURE std::function<void(int servoId)> positionChangedCallback
 
 
 class BlindsServo {
@@ -25,6 +26,7 @@ class BlindsServo {
     // Callbacks
     void setDebugPrintCallback(DEBUG_PRINT_CALLBACK_SIGNATURE);
     void setStatusChangedCallback(STATUS_CHANGED_CALLBACK_SIGNATURE);
+    void setPositionChangedCallback(POSITION_CHANGED_CALLBACK_SIGNATURE);
 
   public:
     // Getters
@@ -42,6 +44,7 @@ class BlindsServo {
     void setStop(); // Stops the movement
     void setOpen();
     void setClose();
+    void goToPosition(int position); // 0-100
 
   private:
     void init(int id, int servoPin, int minPulseValue, int maxPulseValue, int maxDegree, boolean reversed, boolean debug);
@@ -56,6 +59,9 @@ class BlindsServo {
     boolean attached;
 
     int id = 0; // id of the servo
+
+    // Previous status
+    blindsStatus previousStatus;
 
     // Position management
     int target = 0;
@@ -75,6 +81,7 @@ class BlindsServo {
     // Callbacks
     DEBUG_PRINT_CALLBACK_SIGNATURE {nullptr};
     STATUS_CHANGED_CALLBACK_SIGNATURE { nullptr };
+    POSITION_CHANGED_CALLBACK_SIGNATURE { nullptr };
 };
 
 #endif

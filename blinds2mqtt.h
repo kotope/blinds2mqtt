@@ -18,6 +18,7 @@ const char* mqtt_password = "****"; // Your MQTT password
 // mqtt client settings
 const char* client_id = "blinds"; // Must be unique on the MQTT network
 const boolean retain_status = true; // Retain status messages (keeps blinds status available after HA reset)
+const boolean retain_position = true; // Retain position messages
 
 // Home assistant configuration
 // Friendly name of the device. If using multiple servos, a number will be appended at the end of the name e.g. "Blinds 1", "Blinds 2"
@@ -35,5 +36,7 @@ const char* ota_password = "BlindsOTA";
 // Mqtt topics (for advanced use, no need to modify)
 const char* blinds_state_topic        = "blinds/%s/%d/state";
 const char* blinds_command_topic      = "blinds/%s/%d/set";
+const char* blinds_position_topic     = "blinds/%s/%d/position";
+const char* blinds_set_position_topic = "blinds/%s/%d/position/set";
 const char* blinds_debug_topic        = "blinds/%s/debug"; // debug topic
 const char* ha_config_topic           = "homeassistant/cover/%s/%d/config";

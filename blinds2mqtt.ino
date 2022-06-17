@@ -13,7 +13,7 @@
 #include "blinds2mqtt.h"
 #include "BlindsServo.h"
 
-#define SW_VERSION "0.3.0"
+#define SW_VERSION "0.4.0"
 
 #define JSON_BUFFER_LENGTH 2048
 #define MQTT_TOPIC_MAX_LENGTH 256
@@ -74,6 +74,7 @@ void setup() {
     servos[i] = BlindsServo(i+1, servoPin, servo_min_pulse, servo_max_pulse, servo_max_angle, reversed, debug);
     servos[i].setDebugPrintCallback(debugPrint);
     servos[i].setStatusChangedCallback(statusChanged);
+    servos[i].setPositionChangedCallback(positionChanged);
   }
 
   mqttConnect();
@@ -181,11 +182,23 @@ void subscribeAndPublishConfig(int servoId) {
   if (client.subscribe(topic)) {
     // OK
     debugPrint("Subscribed to blinds set topic (" + String(servoId) + "), uniqueId = " + uniqueId);
+  } else {
+    // FAIL
+    debugPrint("Failed to subscribe to blinds set topic (" + String(servoId) + ")");
+  }
+
+  char set_position_t[MQTT_TOPIC_MAX_LENGTH];
+  sprintf(set_position_t, blinds_set_position_topic, uniqueId.c_str(), servoId);
+  if (client.subscribe(set_position_t)) {
+    // OK
+    debugPrint("Subscribed to blinds set position topic (" + String(servoId) + "), uniqueId = " + uniqueId);
     publishConfig(servoId); // Publish config right after subscribed to command topic
   } else {
     // FAIL
     debugPrint("Failed to subscribe to blinds set topic (" + String(servoId) + ")");
   }
+
+  publishConfig(servoId); // Publish config right after subscribed to command topic
 }
 
 void mqttCallback(char* topic, byte * payload, unsigned int length) {
@@ -205,8 +218,14 @@ void mqttCallback(char* topic, byte * payload, unsigned int length) {
   // Check
   if (getValue(topic, '/', 0) == "blinds") { //Ensure blinds topic
      if(getValue(topic, '/', 1) == uniqueId) { // Ensure correct device
-       if(getValue(topic, '/', 3) == "set") { // Ensure set topic
+       String thirdValue = getValue(topic, '/', 3);
+       if(thirdValue == "set") { // Ensure set topic
            handleSet(payload, length, servoId);
+       } else if(thirdValue == "position") {
+          String fourthValue = getValue(topic, '/', 4);
+          if(fourthValue == "set") { // Ensure set topic
+            handleSetPosition(payload, length, servoId);
+          }
        }
      }
   }
@@ -220,6 +239,16 @@ void handleSet(byte * payload, unsigned int length, int servoId) {
     s.setClose();
   } else if (!strncmp((char *)payload, "STOP", length)) { 
     s.setStop();
+  }
+}
+
+void handleSetPosition(byte * payload, unsigned int length, int servoId) {
+
+  BlindsServo& s = servoById(servoId);
+  String myString = (char*)payload;
+  int pos = myString.toInt();
+  if(pos >= 0 && pos <= 100) {
+    s.goToPosition(pos);
   }
 }
 
@@ -237,7 +266,16 @@ void publishConfig(int servoId) {
   char command_t[MQTT_TOPIC_MAX_LENGTH];
   sprintf(command_t, blinds_command_topic, uniqueId.c_str(), servoId);
   root["command_topic"] = command_t;
-  
+
+  // Position topics
+  char position_t[MQTT_TOPIC_MAX_LENGTH];
+  sprintf(position_t, blinds_position_topic, uniqueId.c_str(), servoId);
+  root["position_topic"] = position_t;
+
+  char set_position_t[MQTT_TOPIC_MAX_LENGTH];
+  sprintf(set_position_t, blinds_set_position_topic, uniqueId.c_str(), servoId);
+  root["set_position_topic"] = set_position_t;
+
   // Others
   root["name"] = numberOfServos > 1 ? friendly_name + " " + String(servoId) : friendly_name;
   root["device_class"] = "blind";
@@ -279,12 +317,15 @@ void debugPrint(String message) {
   }
 }
 
+void positionChanged(int servoId) {
+  // Do nothing, only inform position when status is changed
+}
 
 void statusChanged(int servoId) {
   BlindsServo& s = servoById(servoId);
 
   String statusMsg = "OPEN";
-  
+
   switch(s.getStatus()) {
     case BlindsServo::OPEN:
       statusMsg = "open";
@@ -301,8 +342,14 @@ void statusChanged(int servoId) {
     default:
       break;
   }
-  
+
+  // Publish status
   char t[MQTT_TOPIC_MAX_LENGTH];
   sprintf(t, blinds_state_topic, uniqueId.c_str(), servoId);
   client.publish(t, statusMsg.c_str(), retain_status);
+
+  // Publish position
+  char position_t[MQTT_TOPIC_MAX_LENGTH];
+  sprintf(position_t, blinds_position_topic, uniqueId.c_str(), servoId);
+  client.publish(position_t, String(s.currentAngleInPercent()).c_str(), retain_position);
 }
